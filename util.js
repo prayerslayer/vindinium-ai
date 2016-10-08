@@ -83,7 +83,7 @@ function printBoard({tiles, size}) {
 }
 
 function printHero(hero) {
-  console.log(`HP = ${hero.life}, mines = ${hero.mineCount}, gold = ${hero.gold}`)
+  console.log(`Player: ${hero.id} | HP: ${hero.life}/100 | Mines: ${hero.mineCount} | Gold: ${hero.gold}`)
 }
 
 function randomDirection() {
@@ -96,7 +96,7 @@ function walk(p1, path) {
     return randomDirection()
   }
   if (path.length === 1) {
-    return "Stay"
+    return walk(p1, [[], path[0]])
   }
   const p2 = path[1]
   if (p1.y === p2.y && p1.x === p2.x) {
@@ -118,9 +118,11 @@ function walk(p1, path) {
 }
 
 
-function findPath(from, to, grid) {
+function findPath(from, to, grid, set_unwalkable = []) {
   const start = Date.now()
-  // ensure that target position is walkable
+  set_unwalkable.forEach(avoid => grid.setWalkableAt(avoid.x, avoid.y, false))
+  // ensure that from and to is walkable
+  grid.setWalkableAt(from.x, from.y, true)
   grid.setWalkableAt(to.x, to.y, true)
   //console.log(`Finding path from ${from.y}/${from.x} to ${to.y}/${to.x}...`)
   const path = finder.findPath(from.x, from.y, to.x, to.y, grid)

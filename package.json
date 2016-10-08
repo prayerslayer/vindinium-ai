@@ -1,0 +1,26 @@
+{
+  "name": "vindinium-ai",
+  "version": "1.0.0",
+  "description": "",
+  "main": "bot.js",
+  "dependencies": {
+    "cli-clear": "^1.0.4",
+    "lodash": "^4.16.4",
+    "pathfinding": "^0.4.18",
+    "vindinium-client": "^2.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/prayerslayer/vindinium-ai.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/prayerslayer/vindinium-ai/issues"
+  },
+  "homepage": "https://github.com/prayerslayer/vindinium-ai#readme"
+}
