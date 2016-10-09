@@ -1,10 +1,10 @@
 # vindinium-ai
 
-Bot that plays [vindinium](http://vindinium.org/). It’s shit though. Abstractions are bad (better put grid into planning module), it has bugs, lacks tests, it’s hard to follow what it’s doing and in general the bot doesn’t win often.
+Bot that plays [vindinium](http://vindinium.org/). It’s shit though. It has bugs, lacks proper tests, ranking is badly balanced and in general the bot doesn’t win often.
 
 ## General description
 
-Every round the bot generates all possible strategies, e.g. kill another player, take a mine, regenerate health. It ranks them in a non-optimal way and picks the best. As long as there is no better strategy, the bot follows it. If there appears a better opportunity (e.g. standing next to a tavern when the bot is low on health), it will be followed instead, but old strategy is not forgotten. When the goal is achieved (e.g. player died, mine is owned, health is up), the bot checks if the other strategies are still current (e.g. were planned less than N rounds ago). If so, follows the next available strategy or throws them away and picks a completely new one.
+Every round the bot generates all possible strategies, e.g. kill another player, take a mine, regenerate health. It ranks them and picks the best. As long as there is no better strategy, the bot follows it. If there appears a better opportunity (e.g. standing next to a tavern when the bot is low on health), it will be followed instead, but old strategy is not forgotten. When the goal is achieved (e.g. player died, mine is owned, health is up), the bot checks if the other strategies are still current (e.g. were planned less than N rounds ago). If so, follows the next available strategy or throws them away and picks a completely new one.
 
 **What works well**
 

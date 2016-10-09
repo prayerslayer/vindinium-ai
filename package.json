@@ -9,9 +9,14 @@
     "pathfinding": "^0.4.18",
     "vindinium-client": "^2.0.1"
   },
-  "devDependencies": {},
+  "devDependencies": {
+    "chai": "^3.5.0",
+    "mocha": "^3.1.0"
+  },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha test --recursive",
+    "test:watch": "mocha test --recursive --reporter min --watch",
+    "try": "node src/bot.js -t 1 config.json"
   },
   "repository": {
     "type": "git",

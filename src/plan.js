@@ -1,6 +1,6 @@
 const _ = require('lodash')
 const crypto = require('crypto')
-const {findTaverns, findPath, walk, normalize, findMines} = require('./util')
+const {buildGrid, findTaverns, findPath, walk, normalize, findMines} = require('./util')
 const FIGHT_THRESHOLD = 30
 const PLANS = {
   'regenerate': Symbol('regenerate'),
@@ -8,6 +8,12 @@ const PLANS = {
   'kill': Symbol('kill'),
   'flee': Symbol('flee'),
   'hide': Symbol('hide')
+}
+let grid = null
+
+function init(board) {
+  console.log(`Constructing grid...`)
+  grid = buildGrid(board)
 }
 
 function jsonHash(json, algo = 'sha256') {
@@ -18,10 +24,20 @@ function jsonHash(json, algo = 'sha256') {
 
 function signature(plan) {
   // get identifier for plan
-  return plan.type.toString() + jsonHash(plan)
+  let id = {}
+  id.plan = plan.type.toString()
+  if (id.plan === PLANS.kill) {
+    id.player = plan.data.id
+  } else if (id.plan == PLANS.regenerate) {
+    id.life = plan.data.life
+  } else if (id.plan === PLANS.conquer) {
+    id.x = plan.data.x
+    id.y = plan.data.y
+  }
+  return jsonHash(id)
 }
 
-function findNextTavern(state, grid) {
+function findNextTavern(state) {
   const taverns = findTaverns(state.game.board)
   // find paths to all taverns
   const paths = taverns.map(t => findPath(normalize(state.hero.pos), t, grid.clone(), state.game.heroes.map(h => normalize(h.pos))))
@@ -36,26 +52,22 @@ function shortest(paths) {
     .first()
 }
 
-// assigns plan an arbitrary score [0,)
+// assigns plan a score [0, 100]
 // the idea is that killing an almost dead, rich player next to me is better
 // than running across the map to a tavern when i have full health
-function scorePlan(state, grid, plan) {
+function scorePlan(state, plan) {
+  const {size} = state.game.board
   // regeneration plans are useless when we have enough health
   // otoh they get exponentially more important the lower on health we are
   if (plan.type === PLANS.regenerate) {
-    if (state.hero.life > plan.data.life) {
-      return 0
-    } else {
-      //TODO take tavern distance into account
-      return 10 + 100 / state.hero.life
-    }
+    return plan.data.life < state.hero.life ? 1 : 5 + 100 / state.hero.life
   }
   const me = state.hero
   const current_pos = normalize(me.pos)
   // conquering a mine is always okay-ish, but the nearer, the better
   if (plan.type === PLANS.conquer) {
     const path = findPath(current_pos, plan.data, grid.clone())
-    return me.life > FIGHT_THRESHOLD ? 10 + 20 / path.length : 0
+    return me.life > FIGHT_THRESHOLD ? 5 + size / path.length : 0
   }
   // killing a player is good when
   // * he has dem mines
@@ -63,10 +75,12 @@ function scorePlan(state, grid, plan) {
   // * is near
   if (plan.type === PLANS.kill) {
     const player = plan.data
+    const path = findPath(current_pos, normalize(player.pos), grid.clone())
     // if we are under 30 health, we don't get into fights at all
-    return player.life > FIGHT_THRESHOLD ? player.mineCount +
-    (me.life / player.life) +
-    10 / findPath(current_pos, normalize(player.pos), grid.clone()).length : 0
+    return player.life > FIGHT_THRESHOLD ?
+      player.mineCount +
+      (me.life / player.life) :
+      0
   }
 
 }
@@ -104,8 +118,8 @@ function generatePlans(state) {
 }
 
 // takes game state, generates different plans, weighs them and returns plan with most payoff
-function decide(state, grid) {
-  const plans = generatePlans(state).map(plan => [plan, scorePlan(state, grid, plan)])
+function decide(state) {
+  const plans = generatePlans(state).map(plan => [plan, scorePlan(state, plan)])
   const sorted = plans.sort((p1, p2) => {
     const s1 = p1[1]
     const s2 = p2[1]
@@ -145,48 +159,48 @@ function isAchieved(state, {plan, turn}) {
   throw new Error(`Do not know how to measure achievement for plan ${type}`)
 }
 
-function executeRegenerate(state, grid, plan) {
+function executeRegenerate(state, plan) {
   const me = normalize(state.hero.pos)
   // find taverns on board
   const path = findNextTavern(state, grid)
   return walk(me, path)
 }
 
-function executeKill(state, grid, plan) {
+function executeKill(state, plan) {
   const victim = plan.data
   const me = normalize(state.hero.pos)
   const path = findPath(me, normalize(victim.pos), grid.clone(), state.game.heroes.map(h => normalize(h.pos)))
   return walk(me, path)
 }
 
-function executeConquer(state, grid, plan) {
+function executeConquer(state, plan) {
   const mine = plan.data
   const me = normalize(state.hero.pos)
   const path = findPath(me, mine, grid.clone(), state.game.heroes.map(h => normalize(h.pos)))
   return walk(me, path)
 }
 
-function executeFlee(state, grid, plan) {
+function executeFlee(state, plan) {
   throw new Error(`Flee not implemented`)
 }
 
-function executeHide(state, grid, plan) {
+function executeHide(state, plan) {
   throw new Error(`Hide not implemented`)
 }
 
-function execute(state, grid, plan) {
+function execute(state, plan) {
   console.log(`Executing ${plan.type.toString()} with ${JSON.stringify(plan.data)}`)
   switch (plan.type) {
     case PLANS.regenerate:
-      return executeRegenerate(state, grid, plan);
+      return executeRegenerate(state, plan);
     case PLANS.kill:
-      return executeKill(state, grid, plan);
+      return executeKill(state, plan);
     case PLANS.conquer:
-      return executeConquer(state, grid, plan);
+      return executeConquer(state, plan);
     case PLANS.flee:
-      return executeFlee(state, grid, plan);
+      return executeFlee(state, plan);
     case PLANS.hide:
-      return executeHide(state, grid, plan);
+      return executeHide(state, plan);
     default:
       throw new Error(`Do not know how to execute plan ${plan.type.toString()}`)
   }
@@ -196,5 +210,7 @@ module.exports = {
   isAchieved,
   signature,
   execute,
-  decide
+  decide,
+  init,
+  PLANS
 }

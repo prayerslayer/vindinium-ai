@@ -93,7 +93,7 @@ function randomDirection() {
 
 function walk(p1, path) {
   if (path.length === 0) {
-    return randomDirection()
+    return 'Stay'
   }
   if (path.length === 1) {
     return walk(p1, [[], path[0]])
